@@ -1,0 +1,102 @@
+@startuml
+skinparam rectangle {
+    BackgroundColor<<Service>> White
+    BackgroundColor<<Event>> LightYellow
+    BackgroundColor<<External>> LightBlue
+    BackgroundColor<<Data>> LightGreen
+    BackgroundColor<<Consent>> LightPink
+}
+
+title Архитектура PUSH-уведомлений\nс поддержкой согласия пользователя
+
+' === Компоненты ===
+
+rectangle "Бизнес-микросервисы" <<Service>> {
+    [Order Service] --> (Publish Event)
+    [Cart Service] --> (Publish Event)
+    [Marketing Service] --> (Publish Event)
+}
+
+rectangle "Шина событий" <<Event>> {
+    [Kafka / RabbitMQ]
+}
+
+rectangle "Notification Service" <<Service>> {
+    [Event Consumer]
+    [Consent Validator]
+    [Template Engine]
+    [Device Token Resolver]
+    [Push Provider Adapter]
+}
+
+rectangle "User Consent Service" <<Consent>> {
+    [Consent API]
+    [Consent Rules Engine]
+}
+
+rectangle "Внешние провайдеры" <<External>> {
+    [Firebase FCM]
+    [Apple APNs]
+}
+
+rectangle "Хранилища данных" <<Data>> {
+    [User Device Tokens DB]
+    [Notification Templates DB]
+    [Delivery Logs DB]
+    [User Consent DB]
+}
+
+rectangle "Мобильное приложение" <<External>> {
+    [iOS App]
+    [Android App]
+}
+
+' === Связи ===
+
+(Publish Event) --> [Kafka / RabbitMQ] : Publish\n(event_type, user_id, payload)
+
+[Kafka / RabbitMQ] --> [Event Consumer] : Subscribe\n(cart.abandoned, promo.new...)
+
+[Event Consumer] --> [Consent Validator] : Check if\nmarketing consent needed?
+
+[Consent Validator] --> [Consent API] : GET /consent/user/{id}\n(category=push_marketing)
+
+[Consent API] --> [User Consent DB]
+
+[Consent Validator] --> [Event Consumer] : Allow? (true/false)
+
+note right of [Consent Validator]
+  Транзакционные события\n(cart.abandoned, order.cancelled)\nне требуют согласия.\n\nМаркетинговые (promo.*) —\nпроверяют согласие.
+end note
+
+[Event Consumer] --> [Device Token Resolver] : Get tokens by user_id
+[Device Token Resolver] --> [User Device Tokens DB]
+
+[Event Consumer] --> [Template Engine] : Get template by event_type + locale
+[Template Engine] --> [Notification Templates DB]
+
+[Event Consumer] --> [Push Provider Adapter] : Send push\n(если разрешено)
+
+[Push Provider Adapter] --> [Firebase FCM] : Android
+[Push Provider Adapter] --> [Apple APNs] : iOS
+
+[Firebase FCM] --> [Android App] : PUSH
+[Apple APNs] --> [iOS App] : PUSH
+
+[Push Provider Adapter] --> [Delivery Logs DB] : Log success/failure
+
+' === Обратная связь от приложения ===
+[iOS App] --> [Consent API] : POST /consent\n{ category: "push_marketing", granted: true }
+[Android App] --> [Consent API] : PUT /settings/notifications\n{ marketing_push: false }
+
+' === Подписи ===
+
+note bottom of [User Consent DB]
+  Хранит:
+  - user_id
+  - category (push_marketing, email_newsletter...)
+  - granted (true/false)
+  - timestamp, source (app/settings/web)
+end note
+
+@enduml

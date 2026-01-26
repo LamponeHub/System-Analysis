@@ -1,0 +1,36 @@
+{
+  "stores": [
+    {
+      "id": 1,
+      "name": "METRO",
+      "logo_url": "https://cdn.petrushkazelenaya.ru/logos/metro.png",
+      "delivery_info": "Ближайшая доставка сегодня 21:00–23:00",
+      "delivery_type": "scheduled",
+      "external_url": "https://www.metro.ru"
+    },
+    {
+      "id": 2,
+      "name": "Ашан",
+      "logo_url": "https://cdn.petrushkazelenaya.ru/logos/ashan.png",
+      "delivery_info": "Ближайшая доставка сегодня 18:00–20:00",
+      "delivery_type": "scheduled",
+      "external_url": "https://www.auchan.ru"
+    },
+    {
+      "id": 3,
+      "name": "ВкусВилл",
+      "logo_url": "https://cdn.petrushkazelenaya.ru/logos/vkusvill.png",
+      "delivery_info": "Быстрая доставка от 20 до 60 минут",
+      "delivery_type": "express",
+      "external_url": "https://vkusvill.ru"
+    },
+    {
+      "id": 4,
+      "name": "ВИКТОРИЯ",
+      "logo_url": "https://cdn.petrushkazelenaya.ru/logos/victoria.png",
+      "delivery_info": "Ближайшая доставка сегодня 17:00–19:00",
+      "delivery_type": "scheduled",
+      "external_url": "https://victoria-market.ru"
+    }
+  ]
+}

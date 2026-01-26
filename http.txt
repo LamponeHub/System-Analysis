@@ -1,0 +1,3 @@
+GET /api/v1/partner-stores
+Host: api.petrushkazelenaya.ru
+Accept: application/json
