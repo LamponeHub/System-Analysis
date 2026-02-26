@@ -1,0 +1,186 @@
+= Задача 3: REST API регистрации пользователя
+
+== 3.1. Спецификация REST API
+
+=== Endpoint
+`POST /api/v1/users/register`
+
+=== Request Body (JSON)
+
+|===
+| Поле | Тип | Обязательность | Ограничения
+
+| `email`
+| string
+| да
+| Валидный email-адрес (соответствует RFC 5322), уникальный в системе
+
+| `password`
+| string
+| да
+| Минимум 8 символов; должен содержать хотя бы одну букву и одну цифру
+
+| `firstName`
+| string
+| да
+| От 1 до 50 символов; только буквы и пробелы
+
+| `lastName`
+| string
+| да
+| От 1 до 50 символов; только буквы и пробелы
+
+| `phone`
+| string
+| нет
+| Формат: `+79991234567` (опционально)
+|===
+
+=== Успешный ответ (`201 Created`)
+
+[source,json]
+----
+{
+  "userId": "a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8",
+  "email": "linda@example.com",
+  "firstName": "Linda",
+  "lastName": "Ivanova",
+  "message": "User created successfully"
+}
+----
+
+| Поле | Тип | Обязательность
+| `userId` | string (UUID v4) | да
+| `email` | string | да
+| `firstName` | string | да
+| `lastName` | string | да
+| `message` | string | да
+
+=== Ошибки
+
+|===
+| HTTP-код | Тип ошибки | Сообщение | Причина
+
+| 400
+| Client
+| `"Invalid email format"`
+| Неверный формат email
+
+| 400
+| Client
+| `"Password too weak"`
+| Пароль не соответствует требованиям сложности
+
+| 400
+| Client
+| `"Name contains invalid characters"`
+| Имя или фамилия содержат цифры, спецсимволы или пустые строки
+
+| 409
+| Client
+| `"Email already registered"`
+| Email уже существует в базе данных
+
+| 422
+| Client
+| `"Missing required field: email"`
+| Не передано обязательное поле
+
+| 500
+| Server
+| `"Internal server error"`
+| Внутренняя ошибка сервера (например, сбой БД)
+|===
+
+Формат тела ответа при ошибке:
+
+[source,json]
+----
+{
+  "error": "Email already registered",
+  "code": 409
+}
+----
+
+=== Пример запроса
+
+[source,http]
+----
+POST /api/v1/users/register HTTP/1.1
+Content-Type: application/json
+
+{
+  "email": "linda@example.com",
+  "password": "SecurePass123",
+  "firstName": "Linda",
+  "lastName": "Ivanova",
+  "phone": "+79161234567"
+}
+----
+
+=== Пример успешного ответа
+
+[source,http]
+----
+HTTP/1.1 201 Created
+Content-Type: application/json
+
+{
+  "userId": "a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8",
+  "email": "linda@example.com",
+  "firstName": "Linda",
+  "lastName": "Ivanova",
+  "message": "User created successfully"
+}
+----
+
+=== Пример ответа с ошибкой
+
+[source,http]
+----
+HTTP/1.1 409 Conflict
+Content-Type: application/json
+
+{
+  "error": "Email already registered",
+  "code": 409
+}
+----
+
+== 3.2. Алгоритм обработки регистрации на бэкенде
+
+После получения запроса на `/api/v1/users/register` бэкенд выполняет следующие шаги:
+
+. **Парсинг входных данных**: извлечь JSON из тела запроса.
+. **Проверка обязательных полей**: убедиться, что присутствуют `email`, `password`, `firstName`, `lastName`.  
+  → Если отсутствует хотя бы одно — вернуть `422 Unprocessable Entity`.
+. **Валидация email**: проверить формат с помощью регулярного выражения или стандартной библиотеки.  
+  → При ошибке — `400 Bad Request`.
+. **Проверка уникальности email**: выполнить SELECT в БД по полю `email`.  
+  → Если запись найдена — вернуть `409 Conflict`.
+. **Валидация имени и фамилии**:  
+  - Длина от 1 до 50 символов  
+  - Содержат только буквы (латиница/кириллица) и пробелы  
+  → При нарушении — `400 Bad Request`.
+. **Валидация пароля**:  
+  - Длина ≥ 8  
+  - Содержит хотя бы одну букву и одну цифру  
+  → При нарушении — `400 Bad Request`.
+. **(Опционально) Валидация телефона**, если поле передано.
+. **Хеширование пароля**: использовать bcrypt с cost = 12.
+. **Генерация UUID**: создать уникальный идентификатор пользователя (v4).
+. **Начало транзакции** в базе данных.
+. **INSERT в таблицу `users`** со следующими полями:
+  - `id` ← сгенерированный UUID
+  - `email`
+  - `password_hash` ← хеш пароля
+  - `first_name`, `last_name`
+  - `phone` ← NULL, если не указан
+  - `created_at` ← текущая метка времени
+. **Фиксация транзакции** (COMMIT).
+. **Формирование ответа**: вернуть `201 Created` с данными пользователя (без пароля!).
+. **(Опционально) Асинхронная отправка welcome-письма** через очередь задач (например, RabbitMQ или Kafka).
+
+> **Обработка исключений**:
+> - Все ошибки валидации — клиентские (`4xx`)
+> - Ошибки БД, генерации ID, сети — серверные (`500`), с логированием в систему мониторинга (например, Sentry или ELK)
