@@ -1,0 +1,25 @@
+FROM python:3.11-slim
+
+# Создаём пользователя без прав root
+RUN useradd -m -u 1000 vanilla && \
+    apt-get update && apt-get install -y --no-install-recommends gcc && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Копируем зависимости и устанавливаем их
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Копируем исходный код
+COPY --chown=vanilla:vanilla . .
+
+# Переключаемся на пользователя без прав root
+USER vanilla
+
+# Порт не нужен для polling-режима, но оставляем для совместимости
+EXPOSE 8080
+
+# Запуск
+CMD ["python", "main.py"]

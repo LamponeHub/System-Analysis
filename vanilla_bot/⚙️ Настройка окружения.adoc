@@ -1,0 +1,197 @@
+⚙️ Настройка окружения
+1. Создайте файл .env
+env
+123456789101112131415161718
+# === Telegram ===
+BOT_TOKEN=123456:AAH...              # ← получите в @BotFather
+ADMIN_CHAT_ID=987654321              # ← ваш ID (узнайте в @userinfobot)
+
+# === Платежи (ЮKassa) ===
+YOOKASSA_SHOP_ID=your_shop_id        # ← из личного кабинета ЮKassa
+YOOKASSA_SECRET_KEY=your_secret_key  # ← секретный ключ
+PAYMENT_RETURN_URL=https://t.me/StruchokVaniliBot 
+
+# === Доставка ===
+
+🔐 Важно:
+Не коммитьте .env в репозиторий!
+Используйте разные токены для разработки и продакшена.
+Регулярно меняйте секретные ключи.
+2. Установите зависимости
+bash
+12345678910
+# Создайте и активируйте виртуальное окружение
+python -m venv venv
+
+# Windows:
+venv\Scripts\activate
+# macOS / Linux:
+source venv/bin/activate
+
+# Установите пакеты
+pip install -r requirements.txt
+🚀 Запуск бота
+▶️ Режим разработки (polling)
+bash
+1
+🔁 С авто-релоадом при изменении кода
+bash
+12
+🌐 Режим production (через systemd)
+Создайте файл /etc/systemd/system/vanilla-bot.service:
+ini
+123456789101112131415161718
+[Unit]
+Description=Telegram Bot for "Struchok Vanili"
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/vanilla_bot
+Environment="PATH=/opt/vanilla_bot/venv/bin"
+
+Активируйте сервис:
+bash
+1234
+sudo systemctl daemon-reload
+sudo systemctl enable vanilla-bot
+sudo systemctl start vanilla-bot
+sudo systemctl status vanilla-bot
+📋 Просмотр логов
+bash
+12345
+# Через systemd
+journalctl -u vanilla-bot -f --output=cat
+
+# Или файл лога
+tail -f bot.log
+🐳 Docker-развёртывание
+Сборка и запуск
+bash
+1234567891011
+# Сборка образа
+docker-compose build
+
+# Запуск в фоне
+docker-compose up -d
+
+# Просмотр логов
+docker-compose logs -f vanilla-bot
+
+# Остановка
+
+Обновление через Docker
+bash
+12
+🧪 Тестирование
+Локальные тесты (pytest)
+bash
+12345
+# Установите pytest, если ещё нет
+pip install pytest pytest-asyncio
+
+# Запустите тесты
+pytest -v
+Пример теста: tests/test_cart.py
+python
+1234567891011121314
+import pytest
+from services.cart_service import Cart
+from services.menu_data import get_item_by_id
+
+def test_add_item():
+    cart = Cart()
+    assert cart.add_item("cap_001", 2) is True
+    assert len(cart) == 2
+    assert cart.get_total() == 380  # 190 * 2
+
+
+Тестовые сценарии в Telegram
+Шаг
+Ожидаемый результат
+/start
+Приветствие + кнопки меню
+«Меню» → «Напитки»
+Список товаров с ценами
+«Капучино» → «В корзину»
+✅ Добавлено в корзину
+«Корзина» → «Оформить»
+Запрос способа доставки
+Ввод адреса и телефона
+Переход к оплате
+Оплата (тест ЮKassa)
+Возврат в бот → подтверждение заказа
+/admin (с правами)
+Доступ к управлению
+💡 Тестовые карты ЮKassa:
+Успех: 1111 1111 1111 1026, любой будущий срок, любой CVV
+Отказ: 1111 1111 1111 1010
+Включите тестовый режим в личном кабинете ЮKassa.
+🔍 Диагностика и логи
+Частые ошибки и решения
+Ошибка
+Причина
+Решение
+Bot token is invalid
+Неверный токен
+Проверьте BOT_TOKEN в .env, нет ли пробелов
+Payment gateway error
+Не настроены ключи
+Заполните YOOKASSA_* переменные, включите тестовый режим
+Бот не отвечает
+Процесс упал
+systemctl status vanilla-bot или docker-compose ps
+Не приходят уведомления
+Неверный ADMIN_CHAT_ID
+Узнайте свой ID в @userinfobot, проверьте, что бот не заблокирован
+ModuleNotFoundError
+Запуск не из корня
+Запускайте python main.py из папки vanilla_bot/
+Включение отладочных логов
+В .env добавьте:
+env
+1
+Или в коде config.py:
+python
+1
+LOG_LEVEL = os.getenv("LOG_LEVEL", "DEBUG").upper()
+🔄 Обновление и бэкап
+Обновление кода
+bash
+123456789101112
+# Остановите бота
+sudo systemctl stop vanilla-bot  # или docker-compose down
+
+# Обновите код
+git pull origin main
+
+# Обновите зависимости (если менялся requirements.txt)
+source venv/bin/activate
+pip install -r requirements.txt
+
+
+Бэкап данных
+bash
+12345678
+# Экспорт меню
+python -c "from services.menu_data import export_menu_json; print(export_menu_json())"
+
+# Бэкап .env и конфигов
+tar -czf vanilla_backup_$(date +%Y%m%d).tar.gz .env config.py requirements.txt
+
+# Бэкап БД (если используется)
+sqlite3 bot.db ".backup 'bot_backup.db'"
+✅ Чек-лист перед запуском в продакшен
+Токен бота получен и протестирован
+.env настроен, секреты не в репозитории
+Каталог menu_data.py наполнен актуальными товарами
+Платёжная система протестирована в песочнице
+ADMIN_CHAT_ID указан, уведомления работают
+Логирование включено, логи пишутся в файл
+Бот запущен под systemd / Docker с авто-рестартом
+Проведён тестовый заказ от создания до оплаты
+Настроены мониторинг и алерты (опционально: Sentry, Prometheus)
+🎉 Поздравляем! Ваш бот «Стручок Ванили» готов принимать заказы.
+📈 Следующие шаги: подключите аналитику (Google Analytics / Яндекс.Метрика для вебхуков), настройте CRM-интеграцию, добавьте программу лояльности.

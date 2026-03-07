@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  vanilla-bot:
+    build: .
+    container_name: vanilla-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./logs:/app/logs  # для сохранения логов
+    # depends_on:
+    #   - redis  # раскомментируйте, если используете Redis
+
+  # === Опционально: Redis для хранения сессий и корзин ===
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: vanilla-redis
+  #   restart: unless-stopped
+  #   ports:
+  #     - "127.0.0.1:6379:6379"  # только localhost!
+  #   volumes:
+  #     - redis_/data
+  #   command: redis-server --appendonly yes
+
+# volumes:
+#   redis_
