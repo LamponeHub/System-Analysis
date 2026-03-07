@@ -1,0 +1,31 @@
+site_name: RTM Hub Documentation
+site_description: Документация проекта Requirements Traceability Hub
+site_author: System Analyst
+repo_url: https://github.com/yourusername/rtm-hub
+
+theme:
+  name: material
+  palette:
+    primary: blue
+    accent: indigo
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - toc.integrate
+
+nav:
+  - Главная: index.md
+  - Требования:
+    - BRD: requirements/BRD.md
+    - FRD: requirements/FRD.md
+    - NFR: requirements/NFR.md
+  - Архитектура:
+    - ERD: architecture/ERD.md
+    - API: architecture/API.md
+  - Процессы:
+    - BPMN: processes/BPMN_requirements_flow.md
+
+markdown_extensions:
+  - mermaid2
+  - pymdownx.highlight
+  - pymdownx.superfences

@@ -1,0 +1,6 @@
+﻿Тип,Ссылка
+BRD,docs/requirements/BRD.md
+FRD,docs/requirements/FRD.md
+API Spec,docs/architecture/API.md
+ERD,docs/architecture/ERD.md
+BPMN,docs/processes/BPMN_requirements_flow.md

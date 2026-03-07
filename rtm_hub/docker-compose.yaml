@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./src/backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src/backend:/app
+      - rtm_/app/data
+    environment:
+      - DATABASE_URL=sqlite:///./data/rtm_hub.db
+    restart: unless-stopped
+  
+  docs:
+    image: squidfunk/mkdocs-material:latest
+    ports:
+      - "8080:8000"
+    volumes:
+      - ./docs:/docs
+    command: serve --dev-addr=0.0.0.0:8000
+
+volumes:
+  rtm_

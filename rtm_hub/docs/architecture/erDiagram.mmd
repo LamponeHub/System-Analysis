@@ -1,0 +1,42 @@
+erDiagram
+    REQUIREMENT ||--o{ TRACEABILITY_LINK : "has"
+    REQUIREMENT ||--o{ VERSION : "has versions"
+    USER ||--o{ REQUIREMENT : "creates"
+    
+    REQUIREMENT {
+        int id PK
+        string req_id "REQ-001"
+        string title
+        text description
+        string priority "High/Medium/Low"
+        string status "Draft/Active/Approved/Rejected"
+        string source
+        datetime created_at
+        datetime updated_at
+        int created_by FK
+    }
+    
+    TRACEABILITY_LINK {
+        int id PK
+        int from_requirement_id FK
+        int to_artifact_id FK
+        string artifact_type "Requirement/Task/TestCase"
+        string link_type "Derives/Satisfies/Verifies"
+        datetime created_at
+    }
+    
+    VERSION {
+        int id PK
+        int requirement_id FK
+        int version_number
+        text changes_summary
+        datetime created_at
+        int created_by FK
+    }
+    
+    USER {
+        int id PK
+        string username
+        string email
+        datetime created_at
+    }

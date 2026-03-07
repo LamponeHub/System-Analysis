@@ -1,0 +1,157 @@
+openapi: 3.0.3
+info:
+  title: RTM Hub API
+  version: 1.0.0
+  description: API для управления требованиями и матрицей трассируемости
+
+servers:
+  - url: http://localhost:8000/api/v1
+
+paths:
+  /requirements:
+    get:
+      summary: Получить список требований
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [Draft, Active, Approved, Rejected]
+        - name: priority
+          in: query
+          schema:
+            type: string
+            enum: [High, Medium, Low]
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Requirement'
+    
+    post:
+      summary: Создать требование
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequirementCreate'
+      responses:
+        '201':
+          description: Требование создано
+
+  /requirements/{req_id}:
+    get:
+      summary: Получить требование по ID
+      parameters:
+        - name: req_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Успешный ответ
+        '404':
+          description: Требование не найдено
+
+  /requirements/{req_id}/links:
+    post:
+      summary: Создать связь требования
+      parameters:
+        - name: req_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TraceabilityLinkCreate'
+      responses:
+        '201':
+          description: Связь создана
+
+  /rtm/export:
+    get:
+      summary: Экспорт RTM в Excel
+      responses:
+        '200':
+          description: Excel файл
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+
+components:
+  schemas:
+    Requirement:
+      type: object
+      properties:
+        id:
+          type: integer
+        req_id:
+          type: string
+          example: "REQ-001"
+        title:
+          type: string
+        description:
+          type: string
+        priority:
+          type: string
+          enum: [High, Medium, Low]
+        status:
+          type: string
+          enum: [Draft, Active, Approved, Rejected]
+        source:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    
+    RequirementCreate:
+      type: object
+      required:
+        - title
+        - description
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        priority:
+          type: string
+          enum: [High, Medium, Low]
+          default: Medium
+        source:
+          type: string
+    
+    TraceabilityLinkCreate:
+      type: object
+      required:
+        - to_artifact_id
+        - artifact_type
+        - link_type
+      properties:
+        to_artifact_id:
+          type: integer
+        artifact_type:
+          type: string
+          enum: [Requirement, Task, TestCase]
+        link_type:
+          type: string
+          enum: [Derives, Satisfies, Verifies, Depends]
