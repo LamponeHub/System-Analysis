@@ -1,0 +1,105 @@
+openapi: 3.0.3
+info:
+  title: TextileCompliance AI API
+  description: API для интеллектуальной проверки документации швейных предприятий и консультаций по грантам.
+  version: 1.0.0
+  contact:
+    name: System Analyst Portfolio
+    email: analyst@example.com
+
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Local development server
+
+paths:
+  /analyze/grant:
+    post:
+      summary: Анализ готовности к гранту
+      description: Принимает описание проекта и возвращает список недостающих документов и рекомендации по оформлению.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                project_description:
+                  type: string
+                  example: "Закупка 5 швейных машин для цеха в Москве."
+                region:
+                  type: string
+                  example: "Москва"
+                budget_amount:
+                  type: number
+                  example: 2000000
+              required:
+                - project_description
+      responses:
+        '200':
+          description: Успешный анализ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [READY, NEEDS_WORK]
+                  missing_docs:
+                    type: array
+                    items:
+                      type: string
+                  recommendations:
+                    type: array
+                    items:
+                      type: string
+                  sources:
+                    type: array
+                    items:
+                      type: string
+
+  /audit/gost:
+    post:
+      summary: Аудит описания товара на соответствие ГОСТ
+      description: Проверяет текст описания товара на наличие запрещенных терминов и несоответствий стандартам.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                product_description:
+                  type: string
+                  example: "Платье из биохлопка со стрейчем."
+                target_marketplace:
+                  type: string
+                  enum: [Wildberries, Ozon, General]
+      responses:
+        '200':
+          description: Отчет об аудите
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GostAuditResponse'
+
+components:
+  schemas:
+    GostAuditResponse:
+      type: object
+      properties:
+        is_compliant:
+          type: boolean
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              term:
+                type: string
+              reason:
+                type: string
+              gost_reference:
+                type: string
+        corrected_text:
+          type: string
