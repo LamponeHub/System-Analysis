@@ -1,0 +1,21 @@
+Создание структуры:
+bash
+12
+mkdir -p ether-proptech/{src/{core,integrations,llm/prompts,api},docs/{regulations,workflows,architecture},tests,ci_cd,scripts,data/vector_store,models}# Скопируйте содержимое всех файлов выше в соответствующие места
+
+Подготовка модели (один раз):
+bash
+1234
+cd ether-proptechchmod +x scripts/init_model.shmake init# Скрипт скачает Qwen 2.5. Теперь у вас есть свой локальный интеллект.
+
+Наполнение знаниями:
+Положите файлы законов (в формате .md) в папку docs/regulations. Например, скопируйте текст закона о тишине в gost_noise.md.
+Запуск системы:
+bash
+12
+make upmake deploy-rules  # Индексация ваших документов в векторную базу
+
+Проверка истины:
+bash
+12
+make test# Если тесты прошли зеленой полосой — система готова. Галлюцинации заблокированы.

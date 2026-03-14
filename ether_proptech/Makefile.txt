@@ -1,0 +1,41 @@
+.PHONY: init up down test lint clean help
+
+# Помощь
+help:
+	@echo "🏛️  Эфир: Система управления недвижимостью"
+	@echo "------------------------------------------"
+	@echo "make init     - Скачать AI модель (требуется интернет один раз)"
+	@echo "make up       - Запустить все сервисы (DB, LLM, API)"
+	@echo "make down     - Остановить сервисы"
+	@echo "make test     - Запустить тесты на галлюцинации"
+	@echo "make lint     - Проверить документацию на стиль"
+	@echo "make clean    - Очистить кэши и временные файлы"
+
+# Инициализация модели
+init:
+	@./scripts/init_model.sh
+
+# Запуск
+up:
+	docker-compose up -d
+	@echo "⏳ Ожидание запуска сервисов..."
+	@sleep 5
+	@echo "✅ Система 'Эфир' запущена. API доступен на http://localhost:8080"
+
+# Остановка
+down:
+	docker-compose down
+
+# Тесты
+test:
+	docker-compose exec app pytest tests/ -v
+
+# Линтинг документов
+lint:
+	markdownlint docs/**/*.md
+
+# Очистка
+clean:
+	rm -rf __pycache__ .pytest_cache
+	find . -name "*.pyc" -delete
+	@echo "🧹 Уборка завершена."

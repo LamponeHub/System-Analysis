@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  # Локальный сервер моделей (запускает Qwen или DeepSeek)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ether-llm
+    volumes:
+      - ./models:/root/.ollama
+    ports:
+      - "11434:11434"
+    restart: unless-stopped
+    command: serve
+
+  # Векторная база данных для хранения регламентов
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: ether-vector-db
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data/vector_store:/chroma/chroma
+    environment:
+      - IS_PERSISTENT=TRUE
+
+  # Основное приложение (API + Логика)
+  app:
+    build: .
+    container_name: ether-api
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./src:/app/src
+      - ./docs:/app/docs
+    environment:
+      - LLM_HOST=http://ollama:11434
+      - VECTOR_DB_HOST=http://chromadb:8000
+      - MODEL_NAME=qwen2.5:7b-instruct
+    depends_on:
+      - ollama
+      - chromadb
+    command: uvicorn src.api.main:app --host 0.0.0.0 --port 8080
