@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Печать заявления</title>
+    <style>
+        body { font-family: "Times New Roman", serif; padding: 40px; max-width: 800px; margin: 0 auto; }
+        .header-right { text-align: right; margin-bottom: 40px; }
+        .title { text-align: center; font-weight: bold; margin: 20px 0; text-transform: uppercase; }
+        .content { text-align: justify; line-height: 1.5; text-indent: 40px; }
+        .footer { margin-top: 60px; display: flex; justify-content: space-between; }
+        .signature-line { border-top: 1px solid black; width: 200px; text-align: center; padding-top: 5px; }
+        
+        @media print {
+            body { padding: 0; }
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <button onclick="window.print()" class="no-print fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow">🖨 Распечатать / Сохранить в PDF</button>
+
+    <div class="header-right">
+        <p>Начальнику {{ statement.target_department }}</p>
+        <p>от гр. {{ statement.applicant_name }},</p>
+        <p>проживающего по адресу:</p>
+        <p>{{ statement.applicant_address }}</p>
+        <p>Тел: _______________</p>
+    </div>
+
+    <div class="title">
+        ЗАЯВЛЕНИЕ
+    </div>
+
+    <div class="content">
+        {{ statement.description }}
+        <br><br>
+        На основании изложенного, руководствуясь ст. 141 УПК РФ, прошу принять данное заявление, провести проверку и возбудить уголовное дело.
+        <br><br>
+        Об ответственности за заведомо ложный донос по ст. 306 УК РФ предупрежден(а).
+    </div>
+
+    <div class="footer">
+        <div>
+            Дата: <span id="currentDate"></span>
+        </div>
+        <div class="signature-line">
+            Подпись / {{ statement.applicant_name }}
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('currentDate').innerText = new Date().toLocaleDateString('ru-RU');
+    </script>
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard - StatementFlow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <nav class="bg-blue-600 p-4 text-white shadow-md">
+        <div class="container mx-auto flex justify-between">
+            <div>
+                <span class="font-bold text-xl">👮 StatementFlow</span>
+                <span class="ml-4">👤 {{ current_user.username }}</span>
+            </div>
+            <div class="space-x-4">
+                <a href="/dashboard" class="hover:underline">Мои заявления</a>
+                <button onclick="logout()" class="hover:underline">Выйти</button>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container mx-auto p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-800">Мои заявления</h1>
+            <button onclick="openModal()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                + Новое заявление
+            </button>
+        </div>
+        
+        <div class="grid gap-4" id="statementsList">
+            <!-- Загружается через JS -->
+        </div>
+    </div>
+
+    <!-- Modal для создания -->
+    <div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div class="bg-white p-6 rounded-lg w-full max-w-2xl max-h-screen overflow-y-auto">
+            <h2 class="text-2xl font-bold mb-4">Новое заявление</h2>
+            <form id="createForm" class="space-y-4">
+                <select id="status" class="w-full border p-2 rounded">
+                    <option value="draft">Черновик</option>
+                    <option value="submitted">Подано</option>
+                    <option value="answered">Получен ответ</option>
+                </select>
+                <input type="text" id="applicant_name" placeholder="ФИО" required class="w-full border p-2 rounded">
+                <input type="text" id="applicant_address" placeholder="Адрес" required class="w-full border p-2 rounded">
+                <select id="target_department" class="w-full border p-2 rounded">
+                    <option value="В Полицию (ОВД)">В Полицию (ОВД)</option>
+                    <option value="В Прокуратуру">В Прокуратуру</option>
+                    <option value="В Суд">В Суд</option>
+                </select>
+                <input type="text" id="title" placeholder="Заголовок" required class="w-full border p-2 rounded">
+                <textarea id="description" placeholder="Описание" rows="6" required class="w-full border p-2 rounded"></textarea>
+                <div class="flex space-x-4">
+                    <button type="submit" class="flex-1 bg-blue-600 text-white p-2 rounded">Сохранить</button>
+                    <button type="button" onclick="closeModal()" class="flex-1 bg-gray-400 text-white p-2 rounded">Отмена</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('access_token');
+        if (!token) window.location.href = '/';
+        
+        async function loadStatements() {
+            const response = await fetch('/statements', {
+                headers: {'Authorization': `Bearer ${token}`}
+            });
+            const statements = await response.json();
+            
+            const container = document.getElementById('statementsList');
+            container.innerHTML = statements.map(stmt => `
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h2 class="text-xl font-semibold">${stmt.title}</h2>
+                            <p class="text-gray-500 text-sm">${stmt.target_department}</p>
+                        </div>
+                        <span class="px-3 py-1 rounded text-sm ${
+                            stmt.status === 'draft' ? 'bg-gray-200' :
+                            stmt.status === 'submitted' ? 'bg-yellow-200' : 'bg-green-200'
+                        }">${stmt.status}</span>
+                    </div>
+                    <p class="mt-2 text-gray-700">${stmt.description.substring(0, 100)}...</p>
+                    <div class="mt-4 flex space-x-4">
+                        <a href="/statements/${stmt.id}/pdf" class="text-blue-500 hover:underline">📄 PDF</a>
+                        <a href="/statements/${stmt.id}/print" target="_blank" class="text-blue-500 hover:underline">🖨 Печать</a>
+                        <button onclick="deleteStatement(${stmt.id})" class="text-red-500 hover:underline">🗑 Удалить</button>
+                        <button onclick="updateStatus(${stmt.id})" class="text-green-500 hover:underline">✏️ Статус</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        async function createStatement(e) {
+            e.preventDefault();
+            const response = await fetch('/statements', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    status: document.getElementById('status').value,
+                    applicant_name: document.getElementById('applicant_name').value,
+                    applicant_address: document.getElementById('applicant_address').value,
+                    target_department: document.getElementById('target_department').value,
+                    title: document.getElementById('title').value,
+                    description: document.getElementById('description').value
+                })
+            });
+            
+            if (response.ok) {
+                closeModal();
+                loadStatements();
+                document.getElementById('createForm').reset();
+            }
+        }
+        
+        async function deleteStatement(id) {
+            if (!confirm('Удалить заявление?')) return;
+            await fetch(`/statements/${id}`, {
+                method: 'DELETE',
+                headers: {'Authorization': `Bearer ${token}`}
+            });
+            loadStatements();
+        }
+        
+        async function updateStatus(id) {
+            const newStatus = prompt('Новый статус (draft/submitted/answered):', 'submitted');
+            if (!newStatus) return;
+            await fetch(`/statements/${id}/status?new_status=${newStatus}`, {
+                method: 'PATCH',
+                headers: {'Authorization': `Bearer ${token}`}
+            });
+            loadStatements();
+        }
+        
+        function openModal() { document.getElementById('modal').classList.remove('hidden'); }
+        function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+        function logout() { localStorage.removeItem('access_token'); window.location.href = '/'; }
+        
+        document.getElementById('createForm').addEventListener('submit', createStatement);
+        loadStatements();
+    </script>
+</body>
+</html>
